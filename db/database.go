@@ -8,13 +8,7 @@ import (
 	"os"
 )
 
-type DbInstance struct {
-	Db *gorm.DB
-}
-
-var Database = DbInstance{}
-
-func ConnectDatabase(name string) *DbInstance {
+func ConnectDatabase(name string) *gorm.DB {
 	db, err := gorm.Open(sqlite.Open(name), &gorm.Config{})
 	if err != nil {
 		log.Fatal("failled to Connect to database")
@@ -26,7 +20,6 @@ func ConnectDatabase(name string) *DbInstance {
 
 	db.AutoMigrate(model.User{}, model.Url{}, model.Request{})
 
-	log.Println("JADIDE")
-	return &DbInstance{Db: db}
+	return db
 
 }
