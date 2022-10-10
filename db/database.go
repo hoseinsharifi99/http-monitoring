@@ -1,6 +1,7 @@
 package db
 
 import (
+	"ec/model"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"log"
@@ -13,8 +14,8 @@ type DbInstance struct {
 
 var Database = DbInstance{}
 
-func ConnectDatabase() {
-	db, err := gorm.Open(sqlite.Open("myproject.db"), &gorm.Config{})
+func ConnectDatabase(name string) *DbInstance {
+	db, err := gorm.Open(sqlite.Open(name), &gorm.Config{})
 	if err != nil {
 		log.Fatal("failled to Connect to database")
 		os.Exit(2)
@@ -23,10 +24,9 @@ func ConnectDatabase() {
 	log.Println("connected successfully to databsae")
 	log.Println("running migration")
 
-	db.AutoMigrate()
+	db.AutoMigrate(model.User{}, model.Url{}, model.Request{})
+
 	log.Println("JADIDE")
-	Database = DbInstance{
-		Db: db,
-	}
+	return &DbInstance{Db: db}
 
 }
