@@ -23,6 +23,7 @@ func (h *Handler) defineRout() {
 	})
 
 	h.fib.Post("/user", h.SignUp)
+	h.fib.Post("/user/login", h.Login)
 
 }
 

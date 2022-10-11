@@ -14,12 +14,12 @@ func (h *Handler) SignUp(c *fiber.Ctx) error {
 	req := new(request.UserReq)
 
 	if err := c.BodyParser(req); err != nil {
-		log.Printf("cont load student data %v", err)
+		log.Printf("cont load user data %v", err)
 		return fiber.ErrBadRequest
 	}
 
 	if err := req.Validate(); err != nil {
-		log.Printf("cont validate student data %v", err)
+		log.Printf("cont validate user data %v", err)
 		return fiber.ErrBadRequest
 	}
 
@@ -37,4 +37,29 @@ func (h *Handler) SignUp(c *fiber.Ctx) error {
 		return fiber.ErrInternalServerError
 	}
 	return c.Status(http.StatusCreated).JSON(request.CreateResponseUser(user))
+}
+
+func (h *Handler) Login(c *fiber.Ctx) error {
+	req := new(request.UserReq)
+
+	if err := c.BodyParser(req); err != nil {
+		log.Printf("cont load user data %v", err)
+		return fiber.ErrBadRequest
+	}
+
+	user := &model.User{
+		UserName: req.UserName,
+		Password: req.Password,
+	}
+
+	u, err := h.dm.GetUserByUserName(user.UserName)
+	if err != nil {
+		log.Printf("user doesnt exitst %v", err)
+		return fiber.ErrInternalServerError
+	}
+	if !u.ValidatePassword(user.Password) {
+		log.Printf("password is incorrect %v", err)
+		return fiber.NewError(http.StatusBadRequest, "invalide password")
+	}
+	return c.Status(http.StatusOK).JSON(request.CreateResponseUser(u))
 }
