@@ -2,7 +2,7 @@ package db_manager
 
 import (
 	"errors"
-	"gorm.io/gorm"
+	"github.com/jinzhu/gorm"
 	"log"
 )
 
