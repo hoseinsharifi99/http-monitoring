@@ -1,26 +1,31 @@
 package handler
 
 import (
-	"ec/db_manager"
 	"ec/model"
 	"ec/request"
-	"errors"
-	"github.com/gofiber/fiber/v2"
+	"github.com/labstack/echo"
 	"log"
 	"net/http"
 )
 
-func (h *Handler) SignUp(c *fiber.Ctx) error {
-	req := new(request.UserReq)
+func bindToAuthRequest(c echo.Context) (*request.UserReq, error) {
+	var userAuth = &request.UserReq{}
+	if err := c.Bind(userAuth); err != nil {
+		return nil, echo.NewHTTPError(http.StatusBadRequest, "error binding user", err)
+	}
+	return userAuth, nil
+}
 
-	if err := c.BodyParser(req); err != nil {
-		log.Printf("cont load user data %v", err)
-		return fiber.ErrBadRequest
+func (h *Handler) SignUp(c echo.Context) error {
+
+	req, err := bindToAuthRequest(c)
+	if err != nil {
+		return err
 	}
 
 	if err := req.Validate(); err != nil {
 		log.Printf("cont validate user data %v", err)
-		return fiber.ErrBadRequest
+		return echo.ErrBadRequest
 	}
 
 	user := &model.User{
@@ -30,21 +35,17 @@ func (h *Handler) SignUp(c *fiber.Ctx) error {
 
 	user.Password, _ = model.HashPassword(user.Password)
 	if err := h.dm.AddUser(user); err != nil {
-		if errors.Is(err, db_manager.ErrUserDuplicate) {
-			return fiber.NewError(http.StatusBadRequest, "User already exist")
-		}
-		log.Printf("cand save user %v", err)
-		return fiber.ErrInternalServerError
+		return echo.NewHTTPError(http.StatusBadRequest, "could not add user to database", err)
 	}
-	return c.Status(http.StatusCreated).JSON(request.CreateResponseUser(user))
+
+	return c.JSON(http.StatusCreated, request.CreateResponseUser(user))
 }
 
-func (h *Handler) Login(c *fiber.Ctx) error {
-	req := new(request.UserReq)
+func (h *Handler) Login(c echo.Context) error {
 
-	if err := c.BodyParser(req); err != nil {
-		log.Printf("cont load user data %v", err)
-		return fiber.ErrBadRequest
+	req, err := bindToAuthRequest(c)
+	if err != nil {
+		return err
 	}
 
 	user := &model.User{
@@ -55,11 +56,11 @@ func (h *Handler) Login(c *fiber.Ctx) error {
 	u, err := h.dm.GetUserByUserName(user.UserName)
 	if err != nil {
 		log.Printf("user doesnt exitst %v", err)
-		return fiber.ErrInternalServerError
+		return echo.ErrInternalServerError
 	}
 	if !u.ValidatePassword(user.Password) {
 		log.Printf("password is incorrect %v", err)
-		return fiber.NewError(http.StatusBadRequest, "invalide password")
+		return echo.NewHTTPError(http.StatusBadRequest, "invalide password")
 	}
-	return c.Status(http.StatusOK).JSON(request.CreateResponseUser(u))
+	return c.JSON(http.StatusOK, request.CreateResponseUser(u))
 }

@@ -19,7 +19,7 @@ type UserResponse struct {
 }
 
 func CreateResponseUser(u *model.User) *UserResponse {
-	token, _ := auth.GenerateJWTToken(u.ID)
+	token, _ := auth.GenerateJWT(u.ID)
 	resUser := &UserResponse{
 		UserName: u.UserName,
 		Token:    token,

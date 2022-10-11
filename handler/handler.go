@@ -1,34 +1,44 @@
 package handler
 
 import (
+	"ec/auth"
 	"ec/db_manager"
-	"github.com/gofiber/fiber/v2"
-	"log"
+	"github.com/dgrijalva/jwt-go"
+	"github.com/labstack/echo"
 )
 
 type Handler struct {
 	dm  *db_manager.DbInstance
-	fib *fiber.App
+	ech *echo.Echo
 }
 
 func Newhandler(dm *db_manager.DbInstance) *Handler {
-	h := &Handler{dm: dm, fib: fiber.New()}
+	h := &Handler{dm: dm, ech: echo.New()}
 	h.defineRout()
 	return h
 }
 
 func (h *Handler) defineRout() {
-	h.fib.Get("/", func(c *fiber.Ctx) error {
-		return c.JSON("hello")
-	})
+	h.ech.Use(auth.JWT())
 
-	h.fib.Post("/user", h.SignUp)
-	h.fib.Post("/user/login", h.Login)
+	auth.AddToWhiteList("/users/login", "POST")
+	auth.AddToWhiteList("/users", "POST")
 
+	//USER
+	h.ech.POST("/users", h.SignUp)
+	h.ech.POST("/users/login", h.Login)
+
+	//URL
+	h.ech.POST("/url", h.CreateUrl)
 }
 
 func (h *Handler) Start() {
-	if err := h.fib.Listen(":8000"); err != nil {
-		log.Println("cant connect to sv")
-	}
+	h.ech.Logger.Fatal(h.ech.Start(":8000"))
+}
+
+func extractID(c echo.Context) uint {
+	e := c.Get("user").(*jwt.Token)
+	claims := e.Claims.(jwt.MapClaims)
+	id := uint(claims["id"].(float64))
+	return id
 }
